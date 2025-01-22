@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:background="@drawable/flappybirdlogo">
+
+
+    <Button
+        android:id="@+id/StartButton"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="300dp"
+        android:textSize="20sp"
+        android:layout_centerHorizontal="true"
+        android:text="Start"
+        android:onClick="startButtonClicked"/>
+    <Button
+        android:id="@+id/MultiplayerButton"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="375dp"
+        android:textSize="20sp"
+        android:layout_centerHorizontal="true"
+        android:text="MultiPlayer"
+        android:onClick="multiplayerButtonClicked"/>
+    <Button
+        android:id="@+id/BirdSelectionButton"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="450dp"
+        android:textSize="20sp"
+        android:layout_centerHorizontal="true"
+        android:text="Select Bird"
+        android:onClick="birdSelectionButtonClicked"/>
+    <Button
+        android:id="@+id/BackgroundSelectionButton"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="525dp"
+        android:textSize="15sp"
+        android:layout_centerHorizontal="true"
+        android:text="Select Background"
+        android:onClick="backgroungSelectionButtonClicked"/>
+
+
+
+
+</RelativeLayout>
