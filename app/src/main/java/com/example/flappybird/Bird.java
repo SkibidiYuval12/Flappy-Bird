@@ -77,4 +77,5 @@ public class Bird
     public int getBirdHeight(){return this.birdHeight;}
     public int getBirdWidth(){return this.birdWidth;}
     public int getBirdX(){return this.birdX;}
+    public void setBirdY(int birdY){this.birdY = birdY;}
 }
