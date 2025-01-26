@@ -117,24 +117,24 @@ public class GameView extends SurfaceView implements Runnable
 
             // code for viewing the rectangles on screen
 
-//            Paint paint = new Paint();
-//            paint.setColor(Color.RED);
-//            paint.setStyle(Paint.Style.STROKE); // Set the style to STROKE (only outline)
-//            paint.setStrokeWidth(5); // Set stroke width (optional, adjust as needed)
-//            Rect topPipeRect=null;
-//            Rect bottomPipeRect=null;
-//            int rectConst=30;
-//            Rect birdRect = new Rect(bird.getBirdX()+rectConst, bird.getBirdY()+rectConst, bird.getBirdX() + bird.getBirdWidth()-rectConst, bird.getBirdY() + bird.getBirdHeight()-rectConst); // Bird's rectangle
-//            for (PipesView pipe : pipesOnScreen)
-//            {
-//                if(pipe.getPipeY()<=0)
-//                    topPipeRect = new Rect(pipe.getPipeX(), pipe.getPipeY(), pipe.getPipeX() + pipe.getPipeWidth(), pipe.getPipeY() + pipe.getPipeHeight()); // Top pipe's rectangle
-//                else
-//                    bottomPipeRect = new Rect(pipe.getPipeX(), pipe.getPipeY(), pipe.getPipeX() + pipe.getPipeWidth(), pipe.getPipeY() + pipe.getPipeHeight()); // Bottom pipe's rectangle
-//            }
-//            canvas.drawRect(birdRect, paint);
-//            canvas.drawRect(topPipeRect, paint);
-//            canvas.drawRect(bottomPipeRect, paint);
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);
+            paint.setStyle(Paint.Style.STROKE); // Set the style to STROKE (only outline)
+            paint.setStrokeWidth(5); // Set stroke width (optional, adjust as needed)
+            Rect topPipeRect=null;
+            Rect bottomPipeRect=null;
+            int rectConst=30;
+            Rect birdRect = new Rect(bird.getBirdX()+rectConst, bird.getBirdY()+rectConst, bird.getBirdX() + bird.getBirdWidth()-rectConst, bird.getBirdY() + bird.getBirdHeight()-rectConst); // Bird's rectangle
+            for (PipesView pipe : pipesOnScreen)
+            {
+                if(pipe.getPipeY()<=0)
+                    topPipeRect = new Rect(pipe.getPipeX(), pipe.getPipeY(), pipe.getPipeX() + pipe.getPipeWidth(), pipe.getPipeY() + pipe.getPipeHeight()); // Top pipe's rectangle
+                else
+                    bottomPipeRect = new Rect(pipe.getPipeX(), pipe.getPipeY(), pipe.getPipeX() + pipe.getPipeWidth(), pipe.getPipeY() + pipe.getPipeHeight()); // Bottom pipe's rectangle
+            }
+            canvas.drawRect(birdRect, paint);
+            canvas.drawRect(topPipeRect, paint);
+            canvas.drawRect(bottomPipeRect, paint);
 
             holder.unlockCanvasAndPost(canvas);
 
