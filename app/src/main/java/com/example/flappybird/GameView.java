@@ -41,7 +41,7 @@ import java.util.Random;
 public class GameView extends SurfaceView implements Runnable
 {
     private int SCREEN_WIDTH,SCREEN_HEIGHT;
-    private int stepsCount=0,maxSteps=100;    //indicates when to make new tubes (100)
+    private int stepsCount=2,maxSteps=100;    //indicates when to make new tubes (100)
     private double gapSize;
     private Paint bgPaint;
     private Bird bird;
