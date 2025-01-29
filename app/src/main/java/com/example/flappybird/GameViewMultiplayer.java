@@ -19,6 +19,9 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.EditText;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -68,6 +71,8 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         holder=getHolder();
         thread = new Thread(this);
         thread.start();
+
+
     }
     public void CreatePipes()
     {

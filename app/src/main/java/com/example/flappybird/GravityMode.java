@@ -41,9 +41,8 @@ public class GravityMode extends AppCompatActivity
     private GameView GameView;
     public static int scoreCount=0;
     public static TextView score;
-    public static ArrayList<Integer> scoreBoardList;     // list that holds the points of the winners
-    public static ArrayList<String> scoreBoardListNames;  // list that holds the names and points of the winners
     public static ImageView gameOver;
+    public static Player player;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -60,8 +59,6 @@ public class GravityMode extends AppCompatActivity
         frm = findViewById(R.id.frmLayout);
         bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bird);
         bitmap = Bitmap.createScaledBitmap(bitmap, 30, 40, false);
-        scoreBoardList=new ArrayList<Integer>();
-        scoreBoardListNames=new ArrayList<String>();
         gameOver = findViewById(R.id.GameOver);
 
     }
