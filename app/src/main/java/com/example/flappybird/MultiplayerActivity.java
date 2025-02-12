@@ -1,60 +1,154 @@
 package com.example.flappybird;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class MultiplayerActivity extends AppCompatActivity
 {
-    private FrameLayout frm;
-    private Bitmap bitmap1,bitmap2;
-    private GameViewMultiplayer GameViewMultiplayer;
-    public static ImageView gameOver;
+    private FirebaseDatabase mDatabase;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_multiplayer);
 
         RelativeLayout relativeLayout = findViewById(R.id.main);
         BitmapDrawable drawable = new BitmapDrawable(getResources(), BackgroungSelectionActivity.selectedBackground);
-        if(BackgroungSelectionActivity.indicateBackgroundSelectionActivity)
+        if (BackgroungSelectionActivity.indicateBackgroundSelectionActivity)
             relativeLayout.setBackground(drawable);
 
-        frm = findViewById(R.id.frmLayout);
-        bitmap1 = BitmapFactory.decodeResource(getResources(), R.drawable.birdplayerone);
-        bitmap1 = Bitmap.createScaledBitmap(bitmap1, 30, 40, false);
-        bitmap2 = BitmapFactory.decodeResource(getResources(), R.drawable.birdplayertwo);
-        bitmap2 = Bitmap.createScaledBitmap(bitmap2, 30, 40, false);
-        gameOver = findViewById(R.id.GameOver);
+        mDatabase = FirebaseDatabase.getInstance();
+
+        // show the initial dialog
+        showCreateOrJoinDialog();
+
 
     }
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus)
+    public void StartGame()
     {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus)
-        {
-            int w = frm.getWidth();
-            int h = frm.getHeight();
-            GameViewMultiplayer = new GameViewMultiplayer(this,w,h);
-            frm.addView(GameViewMultiplayer);
-        }
+        Intent myIntent=new Intent(MultiplayerActivity.this,GravityModeMultiplayer.class);
+        startActivity(myIntent);
+    }
+    private void showCreateOrJoinDialog()
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Action")
+                .setPositiveButton("Create Game", new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        createNewGame();
+                    }
+                })
+                .setNegativeButton("Join Game", new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        joinGame();
+                    }
+                })
+                .setCancelable(false)
+                .show();
     }
 
+    private void createNewGame()
+    {
+        // create a new game
+        DatabaseReference gameRef = mDatabase.getReference("game");
+        //gameRef.child("status").setValue("none");
+
+        // check if no game started else start new one
+        gameRef.child("status").addListenerForSingleValueEvent(new ValueEventListener()
+        {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                String status = dataSnapshot.getValue(String.class);
+                if ("waiting".equals(status) || "playing".equals(status))
+                {
+                    Toast.makeText(MultiplayerActivity.this, "Game already started", Toast.LENGTH_SHORT).show();
+                    showCreateOrJoinDialog();
+                }
+                else
+                {
+                    Toast.makeText(MultiplayerActivity.this, "Game created successfully", Toast.LENGTH_SHORT).show();
+                    gameRef.child("status").setValue("waiting");
+                }
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("Firebase", "Error checking game status", databaseError.toException());
+            }
+        });
+        gameRef.child("status").addValueEventListener(new ValueEventListener()
+        {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot)
+            {
+                if(dataSnapshot.getValue(String.class).equals("playing"))
+                    StartGame();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void joinGame()
+    {
+        DatabaseReference gameRef = mDatabase.getReference("game");
+
+        // check if the game exists and if it's waiting for player 2
+        gameRef.child("status").addListenerForSingleValueEvent(new ValueEventListener()
+        {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot)
+            {
+                String status = dataSnapshot.getValue(String.class);
+                if ("waiting".equals(status)) {
+                    gameRef.child("status").setValue("playing");
+                    StartGame();
+                }
+                else
+                {
+                    Toast.makeText(MultiplayerActivity.this, "No Game Exists", Toast.LENGTH_SHORT).show();
+                    showCreateOrJoinDialog();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError)
+            {
+                Log.e("Firebase", "Error checking game status", databaseError.toException());
+            }
+        });
+    }
 }

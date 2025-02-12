@@ -10,7 +10,7 @@ public class PipesView
         private Bitmap pipe;
         private int SCREEN_HEIGHT, SCREEN_WIDTH;
         private int pipeX,pipeY,pipeHeight,pipeWidth;
-        private int movePace=12; // moves pipes to the left  (12)
+        private int movePace=13; // moves pipes to the left  (13)
 
         public PipesView(Bitmap bitmap, int screenWidth, int screenHeight,int gap,int position)
         {

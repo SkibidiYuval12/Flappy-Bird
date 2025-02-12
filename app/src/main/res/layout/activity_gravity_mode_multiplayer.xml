@@ -5,18 +5,15 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/skybackground"
-    tools:context=".MultiplayerActivity">
-
+    tools:context=".GravityMode"
+    android:background="@drawable/skybackground">
 
     <FrameLayout
         android:id="@+id/frmLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/skybackground">
-
     </FrameLayout>
-
 
     <ImageView
         android:id="@+id/GameOver"
@@ -25,7 +22,8 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="50dp"
         android:visibility="invisible"
-        app:srcCompat="@drawable/gameover"/>
+        app:srcCompat="@drawable/gameover" />
+
 
 
 </RelativeLayout>

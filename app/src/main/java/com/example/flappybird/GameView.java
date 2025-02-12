@@ -155,12 +155,14 @@ public class GameView extends SurfaceView implements Runnable
                 EndGame();
 
             // ending the game if there is collision
-            if(IsCollision())
-                EndGame();
+            if(pipesOnScreen.size()>1)
+                if(IsCollision())
+                     EndGame();
 
             // moves the bird and counts up when to generate new tubes
             bird.move();
             stepsCount++;
+
             if(stepsCount>=maxSteps)
             {
                 CreatePipes();
