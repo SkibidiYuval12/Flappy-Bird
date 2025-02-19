@@ -19,6 +19,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -109,6 +110,8 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             canvas.drawBitmap(backgroundBitmap, 0, 0, null);
             bird1.draw(canvas);
             bird2.draw(canvas);
+            updatePlayerPosition(2, bird2.getBirdY());
+            updatePlayerPosition(1, bird1.getBirdY());
             for (PipesView pipe : pipesOnScreen)
                 pipe.draw(canvas);
 
@@ -135,13 +138,44 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
                 if(IsCollision()!="")
                     EndGame(IsCollision());
 
-            // moves the bird and counts up when to generate new tubes
+
+            // moves the bird and update the firebase
             if(MultiplayerActivity.isPlayer2)
+            {
                 bird2.move();
+                mGameRef.child("player"+1).child("birdY").addListenerForSingleValueEvent(new ValueEventListener()
+                {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot)
+                    {
+                        int Y = dataSnapshot.getValue(int.class);
+                        bird1.setBirdY(Y);
+                    }
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {}
+                });
+            }
             else
+            {
                 bird1.move();
-            updatePlayerPosition(1, bird1.getBirdY());
+                mGameRef.child("player"+2).child("birdY").addListenerForSingleValueEvent(new ValueEventListener()
+                {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot)
+                    {
+                        int Y = dataSnapshot.getValue(int.class);
+                        bird2.setBirdY(Y);
+                    }
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {}
+                });
+
+            }
+
             updatePlayerPosition(2, bird2.getBirdY());
+            updatePlayerPosition(1, bird1.getBirdY());
+
+            // up the steps to generate new tubes
             stepsCount++;
             if(stepsCount>=maxSteps)
             {
@@ -167,7 +201,7 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         }
     }
     public void updatePlayerPosition(int player, int yPosition)  // update the player Y position in the database
-    { mGameRef.child("player" + player).child("birdY").setValue(yPosition); }
+    { mGameRef.child("player" + player).child("birdY").setValue((int)(yPosition)); }
     public String IsCollision()
     {
 
