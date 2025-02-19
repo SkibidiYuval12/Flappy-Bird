@@ -62,18 +62,10 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         mDatabase = FirebaseDatabase.getInstance();
         mGameRef = mDatabase.getReference("game");
 
-//        // update Firebase game was created
-//        mGameRef.child("status").setValue("waiting");  // waiting for Player 2
-//        // waiting for player 2 to join
-//        checkForPlayer2();
-
         pipesOnScreen=new ArrayList<PipesView>();  // list of all the pipes on the screen
 
-        // checks to see if player changed background, if not it uses the deafult
-        if(BackgroungSelectionActivity.indicateBackgroundSelectionActivity)
-            backgroundBitmap = BackgroungSelectionActivity.selectedBackground;
-        else
-            backgroundBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.skybackground);       // load the selected background image
+
+        backgroundBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.skybackground);       // load the selected background image
         backgroundBitmap = Bitmap.createScaledBitmap(backgroundBitmap,SCREEN_WIDTH, SCREEN_HEIGHT, true);  // strech the image
 
         bitmapBird1 = BitmapFactory.decodeResource(getResources(),R.drawable.birdplayerone);
@@ -144,8 +136,10 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
                     EndGame(IsCollision());
 
             // moves the bird and counts up when to generate new tubes
-            bird1.move();
-            bird2.move();
+            if(MultiplayerActivity.isPlayer2)
+                bird2.move();
+            else
+                bird1.move();
             updatePlayerPosition(1, bird1.getBirdY());
             updatePlayerPosition(2, bird2.getBirdY());
             stepsCount++;
@@ -172,54 +166,8 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             }
         }
     }
-    public void checkForPlayer2()
-    {
-        // listen for changes in the status to see if Player 2 joins
-        mGameRef.child("status").addValueEventListener(new ValueEventListener()
-        {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot)
-            {
-                String status = dataSnapshot.getValue(String.class);
-                if ("playing".equals(status))
-                {
-                    player2Joined = true;
-                    // start the game if player 2 join
-                    startGame();
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError)
-            {
-                Log.e("Firebase", "Error checking player 2 status", databaseError.toException());
-            }
-        });
-    }
     public void updatePlayerPosition(int player, int yPosition)  // update the player Y position in the database
     { mGameRef.child("player" + player).child("birdY").setValue(yPosition); }
-    public void startGame()   // player 1 doesn't start the game until player 2 has joined
-    { mGameRef.child("status").setValue("playing"); isRunning=true; listenForPlayer2Movement(); }
-    public void listenForPlayer2Movement()
-    {
-        mGameRef.child("player2").child("birdY").addValueEventListener(new ValueEventListener()
-        {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot)
-            {
-                Integer yPosition = dataSnapshot.getValue(Integer.class);
-                if (yPosition != null)
-                {
-                    bird2.setBirdY(yPosition); // update player 2 Y position
-                }
-            }
-            @Override
-            public void onCancelled(DatabaseError databaseError)
-            {
-                Log.e("Firebase", "Error syncing Player 2's position", databaseError.toException());
-            }
-        });
-    }
     public String IsCollision()
     {
 
@@ -252,10 +200,6 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         if (gameOver) return;
         gameOver = true;
         isRunning = false;
-
-        mGameRef.child("winner").setValue(player);
-        DatabaseReference gameRef = mDatabase.getReference("game");
-        gameRef.child("status").setValue("none");
 
         // ensure the following code runs on the UI thread
         ((Activity) getContext()).runOnUiThread(new Runnable()
@@ -296,8 +240,6 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
     {
         // remove GameOver sign
         GravityModeMultiplayer.gameOver.setVisibility(INVISIBLE);
-        DatabaseReference gameRef = mDatabase.getReference("game");
-        gameRef.child("status").setValue("none");
 
 //        gameOver = false;
 //        isRunning = true;
@@ -332,11 +274,15 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
     {
         if (event.getAction() == MotionEvent.ACTION_DOWN)
         {
-            bird1.jump();
-            updatePlayerPosition(1, bird1.getBirdY()); // update Player 1 Y position
-            if (player2Joined)
+            if(MultiplayerActivity.isPlayer2)
             {
-                mGameRef.child("status").setValue("playing");  // start the game when players are ready
+                bird2.jump();
+                updatePlayerPosition(2, bird1.getBirdY()); // update Player 2 Y position
+            }
+            else
+            {
+                bird1.jump();
+                updatePlayerPosition(1, bird1.getBirdY()); // update Player 1 Y position
             }
         }
         return super.onTouchEvent(event);
