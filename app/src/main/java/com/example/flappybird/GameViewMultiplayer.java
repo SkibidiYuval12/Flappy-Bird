@@ -201,6 +201,9 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         gameOver = true;
         isRunning = false;
 
+
+        mGameRef.child("winner").setValue(player);
+
         // ensure the following code runs on the UI thread
         ((Activity) getContext()).runOnUiThread(new Runnable()
         {
