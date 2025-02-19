@@ -34,9 +34,11 @@ import java.util.UUID;
 public class MultiplayerActivity extends AppCompatActivity
 {
     private FirebaseDatabase mDatabase;
+    public static boolean isPlayer2=false;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_multiplayer);
@@ -50,11 +52,11 @@ public class MultiplayerActivity extends AppCompatActivity
 
         // show the initial dialog
         showCreateOrJoinDialog();
-
-
     }
     public void StartGame()
     {
+        DatabaseReference gameRef = mDatabase.getReference("game");
+        gameRef.removeValue();
         Intent myIntent=new Intent(MultiplayerActivity.this,GravityModeMultiplayer.class);
         startActivity(myIntent);
     }
@@ -84,39 +86,42 @@ public class MultiplayerActivity extends AppCompatActivity
     {
         // create a new game
         DatabaseReference gameRef = mDatabase.getReference("game");
-        //gameRef.child("status").setValue("none");
 
         // check if no game started else start new one
         gameRef.child("status").addListenerForSingleValueEvent(new ValueEventListener()
         {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(DataSnapshot dataSnapshot)
+            {
                 String status = dataSnapshot.getValue(String.class);
-                if ("waiting".equals(status) || "playing".equals(status))
+                if(status!=null)
                 {
-                    Toast.makeText(MultiplayerActivity.this, "Game already started", Toast.LENGTH_SHORT).show();
-                    showCreateOrJoinDialog();
+                    if (status.equals("waiting") || status.equals("playing"))
+                    {
+                        Toast.makeText(MultiplayerActivity.this, "Game already started", Toast.LENGTH_SHORT).show();
+                        showCreateOrJoinDialog();
+                    }
                 }
                 else
                 {
                     Toast.makeText(MultiplayerActivity.this, "Game created successfully", Toast.LENGTH_SHORT).show();
+                    isPlayer2=false;
                     gameRef.child("status").setValue("waiting");
                 }
             }
             @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e("Firebase", "Error checking game status", databaseError.toException());
-            }
+            public void onCancelled(DatabaseError databaseError) {}
         });
+
+        // wait till status changes to playing to indicate player 2 joined
         gameRef.child("status").addValueEventListener(new ValueEventListener()
         {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot)
             {
-                if(dataSnapshot.getValue(String.class).equals("playing"))
+                if(dataSnapshot.getValue(String.class)!=null && dataSnapshot.getValue(String.class).equals("playing"))
                     StartGame();
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -126,15 +131,17 @@ public class MultiplayerActivity extends AppCompatActivity
     {
         DatabaseReference gameRef = mDatabase.getReference("game");
 
-        // check if the game exists and if it's waiting for player 2
+        // check if the game exists and if it is waiting for player 2
         gameRef.child("status").addListenerForSingleValueEvent(new ValueEventListener()
         {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot)
             {
                 String status = dataSnapshot.getValue(String.class);
-                if ("waiting".equals(status)) {
+                if ("waiting".equals(status))
+                {
                     gameRef.child("status").setValue("playing");
+                    isPlayer2=true;
                     StartGame();
                 }
                 else
@@ -145,10 +152,7 @@ public class MultiplayerActivity extends AppCompatActivity
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError)
-            {
-                Log.e("Firebase", "Error checking game status", databaseError.toException());
-            }
+            public void onCancelled(DatabaseError databaseError) {}
         });
     }
 }
