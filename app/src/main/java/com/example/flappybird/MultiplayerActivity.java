@@ -128,7 +128,9 @@ public class MultiplayerActivity extends AppCompatActivity
             public void onDataChange(@NonNull DataSnapshot dataSnapshot)
             {
                 if(dataSnapshot.getValue(String.class)!=null && dataSnapshot.getValue(String.class).equals("playing"))
+                {
                     StartGame();
+                }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
@@ -150,6 +152,15 @@ public class MultiplayerActivity extends AppCompatActivity
                 {
                     gameRef.child("status").setValue("playing");
                     isPlayer2=true;
+
+                    // make a pause before the game starts so it starts on the same time on both devices
+                    try {
+                        Thread.sleep(600);
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
                     StartGame();
                 }
                 else
