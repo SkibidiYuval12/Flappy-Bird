@@ -38,7 +38,7 @@ import java.util.UUID;
 public class MultiplayerActivity extends AppCompatActivity
 {
     private FirebaseDatabase mDatabase;
-    public static boolean isPlayer2=false;
+    public static boolean isPlayer2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
