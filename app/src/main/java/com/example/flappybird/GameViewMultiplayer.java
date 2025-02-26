@@ -50,13 +50,12 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
     private boolean isRunning=true,gameOver=false;
     private FirebaseDatabase mDatabase;
     private DatabaseReference mGameRef;
-    private boolean player2Joined = false;
 
     public GameViewMultiplayer(Context context,int height,int width)
     {
         super(context);
         SCREEN_WIDTH = width;
-        SCREEN_HEIGHT = height;
+        SCREEN_HEIGHT = 2206;  // the height of my phone
         bgPaint = new Paint();
         bgPaint.setColor(Color.WHITE);
 
@@ -74,9 +73,6 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         bitmapBird2 = BitmapFactory.decodeResource(getResources(),R.drawable.birdplayertwo);
         bird1 = new Bird(bitmapBird1, SCREEN_WIDTH, SCREEN_HEIGHT);
         bird2 = new Bird(bitmapBird2, SCREEN_WIDTH, SCREEN_HEIGHT);
-        bird2.setBirdY(bird2.getBirdY()+50);
-        mGameRef.child("player"+1).child("isJump").setValue(false);
-        mGameRef.child("player"+2).child("isJump").setValue(false);
 
         gapSize = bitmapBird1.getHeight()/1.5;    // gap size
 
@@ -103,9 +99,9 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot)
             {
-                int gap=0;
-                if(dataSnapshot.getValue(int.class)!=null)
-                    gap = dataSnapshot.getValue(int.class);
+                if(dataSnapshot.getValue()==null)
+                    return;
+                int gap = dataSnapshot.getValue(int.class);
 
                 //create top pipe
                 Bitmap bitmapTopPipe = BitmapFactory.decodeResource(getResources(), R.drawable.pipetop);
@@ -138,7 +134,6 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
                 pipe.draw(canvas);
 
             holder.unlockCanvasAndPost(canvas);
-
         }
     }
     public void run()
@@ -155,65 +150,62 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             if(bird2.getBirdY()>=SCREEN_HEIGHT-bird2.getBirdHeight())
                 EndGame("one");
 
-            bird1.move();
-            bird2.move();
-
             // ending the game if there is collision
             if(pipesOnScreen.size()>1)
                 if(IsCollision()!="")
                     EndGame(IsCollision());
 
-          // check if bird 1 needs to jump
-            mGameRef.child("player"+1).child("isJump").addListenerForSingleValueEvent(new ValueEventListener()
+            // move the birds according to the value in firebase
+            if(MultiplayerActivity.isPlayer2)
             {
-                @Override
-                public void onDataChange(DataSnapshot snapshot)
+                bird2.move();
+                mGameRef.child("player"+2).child("Y").setValue(bird2.getBirdY());
+                mGameRef.child("player"+1).child("Y").addListenerForSingleValueEvent(new ValueEventListener()
                 {
-                    if(snapshot.getValue(boolean.class)==true)
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
                     {
-                        bird1.jump();
-                        mGameRef.child("player"+1).child("isJump").setValue(false);
+                        if(snapshot.getValue()!=null)
+                            bird1.setBirdY(snapshot.getValue(int.class));
                     }
-                }
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                }
-            });
-            // check if bird 2 needs to jump
-            mGameRef.child("player"+2).child("isJump").addListenerForSingleValueEvent(new ValueEventListener()
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
+            }
+            else
             {
-                @Override
-                public void onDataChange(DataSnapshot snapshot)
+                bird1.move();
+                mGameRef.child("player"+1).child("Y").setValue(bird1.getBirdY());
+                mGameRef.child("player"+2).child("Y").addListenerForSingleValueEvent(new ValueEventListener()
                 {
-                    if(snapshot.getValue(boolean.class)==true)
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
                     {
-                        bird2.jump();
-                        mGameRef.child("player"+2).child("isJump").setValue(false);
+                        if(snapshot.getValue()!=null)
+                            bird2.setBirdY(snapshot.getValue(int.class));
                     }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
+            }
 
-                }
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                }
-            });
+            // up the steps to generate new pipes
+            stepsCount++;
+            if (stepsCount >= maxSteps)
+            {
+                CreatePipes();
+                stepsCount = 0;
+                soundPoint(this.getContext());   // sound when make point
+            }
 
-                // up the steps to generate new pipes
-                stepsCount++;
-                if (stepsCount >= maxSteps)
-                {
-                    CreatePipes();
-                    stepsCount = 0;
-                    soundPoint(this.getContext());   // sound when make point
-                }
+            // moves every pipe on screen
+            for (PipesView pipe:pipesOnScreen)
+                pipe.move();
 
-                // moves every pipe on screen
-                for (PipesView pipe:pipesOnScreen)
-                    pipe.move();
-
-                // removes pipes after they leave the screen
-                for (int i=0;i<pipesOnScreen.size();i++)
-                    if(pipesOnScreen.get(i).getPipeX()+pipesOnScreen.get(i).getPipeWidth()<0)
-                        pipesOnScreen.remove(i);
+            // removes pipes after they leave the screen
+            for (int i=0;i<pipesOnScreen.size();i++)
+                if(pipesOnScreen.get(i).getPipeX()+pipesOnScreen.get(i).getPipeWidth()<0)
+                    pipesOnScreen.remove(i);
 
             synchronized (this)
             {
@@ -334,12 +326,10 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             if(MultiplayerActivity.isPlayer2)
             {
                 bird2.jump();
-                mGameRef.child("player"+2).child("isJump").setValue(true);
             }
             else
             {
                 bird1.jump();
-                mGameRef.child("player"+1).child("isJump").setValue(true);
             }
         }
         return super.onTouchEvent(event);
