@@ -41,7 +41,7 @@
         android:scaleType="fitXY"
         android:layout_marginLeft="200dp"
         android:layout_marginTop="200dp"
-        app:srcCompat="@drawable/darkbackground"
+        app:srcCompat="@drawable/forestbackground"
         android:onClick="ClickedBackground2"/>
     <ImageButton
         android:id="@+id/background3"
@@ -51,7 +51,7 @@
         android:scaleType="fitXY"
         android:layout_marginLeft="20dp"
         android:layout_marginTop="450dp"
-        app:srcCompat="@drawable/racetrack"
+        app:srcCompat="@drawable/darkforestbackground"
         android:onClick="ClickedBackground3"/>
     <ImageButton
         android:id="@+id/background4"

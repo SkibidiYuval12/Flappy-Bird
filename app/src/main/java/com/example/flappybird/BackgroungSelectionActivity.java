@@ -34,7 +34,7 @@ public class BackgroungSelectionActivity extends AppCompatActivity
         indicateBackgroundSelectionActivity=true;
     }
     public void ClickedBackground1 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.skybackground);finish();}
-    public void ClickedBackground2 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.darkbackground);finish();}
-    public void ClickedBackground3 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.racetrack);finish();}
+    public void ClickedBackground2 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.forestbackground);finish();}
+    public void ClickedBackground3 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.darkforestbackground);finish();}
     public void ClickedBackground4 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.spacebackground);finish();}
 }

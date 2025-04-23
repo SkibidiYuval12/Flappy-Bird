@@ -51,6 +51,7 @@ public class GameView extends SurfaceView implements Runnable
     private double gapSize;
     private Paint bgPaint;
     private Bird bird;
+    private BackgroundView backgroundView;
     private PipesView topPipe,bottomPipe;
     private ArrayList<PipesView> pipesOnScreen;
     private Bitmap bitmapBird , backgroundBitmap;  // Bitmap for the bird and the background;
@@ -79,7 +80,8 @@ public class GameView extends SurfaceView implements Runnable
             backgroundBitmap = BackgroungSelectionActivity.selectedBackground;
         else
             backgroundBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.skybackground);       // load the selected bird image
-        backgroundBitmap = Bitmap.createScaledBitmap(backgroundBitmap,SCREEN_WIDTH, SCREEN_HEIGHT, true);  // strech the image
+        backgroundBitmap = Bitmap.createScaledBitmap(backgroundBitmap,2*SCREEN_WIDTH, SCREEN_HEIGHT, true);  // strech the image
+        backgroundView=new BackgroundView(backgroundBitmap, SCREEN_WIDTH, SCREEN_HEIGHT,0,0);
 
         // checks to see if player changed bird skin, if not it uses the deafult skin
         if(BirdSelectionActivity.indicateBirdSelectionActivity)
@@ -121,7 +123,7 @@ public class GameView extends SurfaceView implements Runnable
             // draws the bird and the pipes
             canvas = holder.lockCanvas();
             canvas.drawPaint(bgPaint);
-            canvas.drawBitmap(backgroundBitmap, 0, 0, null);
+            backgroundView.draw(canvas);
             bird.draw(canvas);
             for (PipesView pipe : pipesOnScreen)
                 pipe.draw(canvas);
@@ -158,14 +160,22 @@ public class GameView extends SurfaceView implements Runnable
         {
             DrawSurface();
 
+            backgroundView.move();  // move the background
+
             // ending the game if bird falls of the map
-            if(bird.getBirdY()>=SCREEN_HEIGHT-bird.getBirdHeight()+50)    // (50) for it to look smooth
+            if(bird.getBirdY()>=SCREEN_HEIGHT-bird.getBirdHeight()+50)   // (50) for it to look smooth
+            {
+                soundLose(this.getContext());   // sound when lose
                 EndGame();
+            }
 
             // ending the game if there is collision
             if(pipesOnScreen.size()>1)
                 if(IsCollision())
-                     EndGame();
+                {
+                    soundLose(this.getContext());   // sound when lose
+                    EndGame();
+                }
 
             // moves the bird and counts up when to generate new tubes
             bird.move();
@@ -178,6 +188,8 @@ public class GameView extends SurfaceView implements Runnable
                 // make the game faster every point
                 if(maxSteps>=70)
                     maxSteps-=3;
+
+                soundPoint(this.getContext());   // sound when make point
 
                 // add point
                 GravityMode.scoreCount++;
@@ -192,7 +204,6 @@ public class GameView extends SurfaceView implements Runnable
                         GravityMode.score.setText(Integer.toString(GravityMode.scoreCount));
                     }
                 });
-                soundPoint(this.getContext());   // sound when make point
             }
 
             // moves every pipe on screen
@@ -231,7 +242,7 @@ public class GameView extends SurfaceView implements Runnable
         return (birdRect.intersect(topPipeRect) || birdRect.intersect(bottomPipeRect));
 
     }
-    public synchronized void EndGame()
+    public synchronized void EndGame()   // synchronized means only one thread can execute this method
     {
         // indicates game is over, and stops the running of the thread
         if (gameOver) return;
@@ -352,6 +363,12 @@ public class GameView extends SurfaceView implements Runnable
     public void soundPoint(Context context)
     {
         MediaPlayer mp = MediaPlayer.create(context, R.raw.scoresound);
+        mp.start();
+        mp.setOnCompletionListener(mediaPlayer -> mediaPlayer.release());
+    }
+    public void soundLose(Context context)
+    {
+        MediaPlayer mp = MediaPlayer.create(context, R.raw.losingsound);
         mp.start();
         mp.setOnCompletionListener(mediaPlayer -> mediaPlayer.release());
     }
