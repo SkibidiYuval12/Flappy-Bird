@@ -18,6 +18,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.Random;
+
 public class MainActivity extends AppCompatActivity
 {
     public static String playerName=" ";
@@ -34,6 +39,12 @@ public class MainActivity extends AppCompatActivity
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        if(playerName.equals(" "))
+        {
+            Random rnd=new Random();
+            playerName= "Player "+rnd.nextInt(10000);
+        }
 
     }
     public void startButtonClicked(View view)

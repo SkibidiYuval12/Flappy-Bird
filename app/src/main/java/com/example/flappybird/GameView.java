@@ -31,8 +31,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,9 +60,13 @@ public class GameView extends SurfaceView implements Runnable
     private int interval = 15; // (15)
     private Thread thread;
     private boolean isRunning=true,gameOver=false;
+    private FirebaseDatabase mDatabase;
+    private DatabaseReference mGameRef;
+    private Player currentPlayer;
     public GameView(Context context, int screenWidth, int screenHeight)
     {
         super(context);
+
         SCREEN_WIDTH = screenWidth;
         SCREEN_HEIGHT = screenHeight;
         bgPaint = new Paint();
@@ -106,6 +113,7 @@ public class GameView extends SurfaceView implements Runnable
         bottomPipe=new PipesView(bitmapBottomPipe, SCREEN_WIDTH, SCREEN_HEIGHT,gap+(int)(gapSize),2);    // 2 indicates bottom pipe
         pipesOnScreen.add(bottomPipe);
     }
+
     public void DrawSurface()   // drawing the game (bird,pipes, background)
     {
         if (holder.getSurface().isValid())
@@ -151,7 +159,7 @@ public class GameView extends SurfaceView implements Runnable
             DrawSurface();
 
             // ending the game if bird falls of the map
-            if(bird.getBirdY()>=SCREEN_HEIGHT-bird.getBirdHeight())
+            if(bird.getBirdY()>=SCREEN_HEIGHT-bird.getBirdHeight()+50)    // (50) for it to look smooth
                 EndGame();
 
             // ending the game if there is collision
@@ -167,6 +175,9 @@ public class GameView extends SurfaceView implements Runnable
             {
                 CreatePipes();
                 stepsCount=0;
+                // make the game faster every point
+                if(maxSteps>=70)
+                    maxSteps-=3;
 
                 // add point
                 GravityMode.scoreCount++;
@@ -176,8 +187,10 @@ public class GameView extends SurfaceView implements Runnable
                 mainHandler.post(new Runnable()
                 {
                     @Override
-                    // update the score on the main thread
-                    public void run() {GravityMode.score.setText(Integer.toString(GravityMode.scoreCount));}
+                    public void run()
+                    {
+                        GravityMode.score.setText(Integer.toString(GravityMode.scoreCount));
+                    }
                 });
                 soundPoint(this.getContext());   // sound when make point
             }
@@ -205,7 +218,7 @@ public class GameView extends SurfaceView implements Runnable
         Rect bottomPipeRect=null;
 
         // Bird's rectangle
-        int rectConst=20;   // (30) the image is a bit too big so it shrinks the borders of the rect
+        int rectConst=30;   // (30) the image is a bit too big so it shrinks the borders of the rect
         Rect birdRect = new Rect(bird.getBirdX()+rectConst, bird.getBirdY()+rectConst, bird.getBirdX() + bird.getBirdWidth()-rectConst, bird.getBirdY() + bird.getBirdHeight()-rectConst);
 
         // assigning each pipe to its position
@@ -225,6 +238,8 @@ public class GameView extends SurfaceView implements Runnable
         gameOver = true;
         isRunning = false;
 
+        updateScoreboardFireBase();
+
         // ensure the following code runs on the UI thread
         ((Activity) getContext()).runOnUiThread(new Runnable()
         {
@@ -234,7 +249,6 @@ public class GameView extends SurfaceView implements Runnable
                 // show the game over image and call the game over dialog
                 GravityMode.gameOver.setVisibility(VISIBLE);
                 showGameOverDialog();
-
             }
         });
     }
@@ -249,11 +263,11 @@ public class GameView extends SurfaceView implements Runnable
             {
                 new AlertDialog.Builder(getContext())
                         .setTitle("Game Over")
+                        .setMessage("Name: "+currentPlayer.getName()+"\nScore: "+currentPlayer.getScore())
                         .setCancelable(false)
                         .setPositiveButton("Restart", (dialog, which) -> restartGame())
                         .setNegativeButton("ScoreBoard", (dialog, which) ->
                         {
-                            updateScoreboard();
                             // show Scoreboard Activity
                             Intent myIntent = new Intent(getContext(), ScoreBoardActivity.class);
                             getContext().startActivity(myIntent);
@@ -263,6 +277,8 @@ public class GameView extends SurfaceView implements Runnable
                         {
                             GravityMode.scoreCount = 0;
                             GravityMode.score.setText("0");
+
+                            // go to MainActivity
                             Intent myIntent = new Intent(getContext(), MainActivity.class);
                             getContext().startActivity(myIntent);
                         })
@@ -271,19 +287,24 @@ public class GameView extends SurfaceView implements Runnable
         });
     }
 
-    private void updateScoreboard()
+    // updates the firebase with player name and score
+    private void updateScoreboardFireBase()
     {
-        // create a new Player object with the name and score
-        GravityMode.player = new Player(MainActivity.playerName, GravityMode.scoreCount);
-        DatabaseReference database = FirebaseDatabase.getInstance().getReference(GravityMode.player.getName());
-        database.child(GravityMode.player.getName()).setValue(GravityMode.player);
+        mDatabase=FirebaseDatabase.getInstance();
+        mGameRef=mDatabase.getReference("players");
+
+        // update players score and name
+        currentPlayer = new Player(MainActivity.playerName,GravityMode.scoreCount);
+        mGameRef.child(currentPlayer.getName()+" : "+currentPlayer.getScore()).setValue(currentPlayer);
     }
+
     public void restartGame()
     {
         // restart the points and remove GameOver sign
-        GravityMode.scoreCount=0;
+        GravityMode.scoreCount = 0;
         GravityMode.score.setText("0");
         GravityMode.gameOver.setVisibility(INVISIBLE);
+
 
 //        gameOver = false;
 //        isRunning = true;
@@ -332,5 +353,6 @@ public class GameView extends SurfaceView implements Runnable
     {
         MediaPlayer mp = MediaPlayer.create(context, R.raw.scoresound);
         mp.start();
+        mp.setOnCompletionListener(mediaPlayer -> mediaPlayer.release());
     }
 }

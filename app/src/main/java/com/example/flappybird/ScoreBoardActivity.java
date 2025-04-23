@@ -1,5 +1,6 @@
 package com.example.flappybird;
 
+import android.content.Intent;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -27,8 +29,10 @@ import java.util.Comparator;
 
 public class ScoreBoardActivity extends AppCompatActivity
 {
-    private ArrayList<Player> playerList = new ArrayList<>();
+    private ArrayList<Player> playersList = new ArrayList<>();
     private ListView listView;
+    private FirebaseDatabase mDatabase;
+    private DatabaseReference mGameRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -49,10 +53,62 @@ public class ScoreBoardActivity extends AppCompatActivity
         if(BackgroungSelectionActivity.indicateBackgroundSelectionActivity)
             relativeLayout.setBackground(drawable);
 
+        mDatabase=FirebaseDatabase.getInstance();
+        mGameRef=mDatabase.getReference("players");
+
+        // add all players in firebase to the list
+        mGameRef.addListenerForSingleValueEvent(new ValueEventListener()
+        {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot)
+            {
+                for (DataSnapshot snap : snapshot.getChildren())
+                {
+                    Player player=new Player(snap.getValue(Player.class).getName(),snap.getValue(Player.class).getScore());
+                    playersList.add(player);
+                }
+                CreateList();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
 
     }
 
-    public void ReturnToGameButton(View view) {finish();}
+    public void CreateList()
+    {
+        // sort the list by scores
+        int maxScore=-1;
+        int maxIndex=0;
+        ArrayList<Player> winnerList=new ArrayList<>();
+        while(playersList.size()>0)
+        {
+            for (int i=0;i<playersList.size();i++)
+            {
+                if(playersList.get(i).getScore()>maxScore)
+                {
+                    maxIndex=i;
+                    maxScore=playersList.get(i).getScore();
+                }
+            }
+            winnerList.add(playersList.get(maxIndex));
+            maxScore=-1;
+            playersList.remove(maxIndex);
+        }
+
+        // create the list
+        ArrayAdapter <Player> adapter;
+        adapter = new ArrayAdapter<Player> (this,android.R.layout.simple_list_item_1, winnerList);
+        listView = (ListView) findViewById(R.id.listViewScores);
+        listView.setAdapter(adapter);
+        listView.setAdapter(adapter);
+    }
+    public void ReturnToGameButton(View view)
+    {
+        Intent myIntent=new Intent(ScoreBoardActivity.this,MainActivity.class);
+        startActivity(myIntent);
+    }
 }
 
 

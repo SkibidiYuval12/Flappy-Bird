@@ -15,7 +15,7 @@ public class Bird
     private int birdHeight,birdWidth;
     private int birdVelocity;
     private final double GRAVITY = 2;  // Gravity effect on the bird  (2)
-    private final int BIRD_JUMP = -30;  // Jump effect on the bird  (-27)
+    private final int BIRD_JUMP = -30;  // Jump effect on the bird  (-30)
 
     public Bird(Bitmap bitmap, int screenWidth, int screenHeight)
     {
@@ -39,10 +39,8 @@ public class Bird
         birdY += birdVelocity;
 
         // Prevent the bird from falling below the ground
-        if (birdY > SCREEN_HEIGHT - bird.getHeight())
-        {
-            birdY=SCREEN_HEIGHT - bird.getHeight();
-        }
+        if (birdY > SCREEN_HEIGHT-100 )
+            birdY=SCREEN_HEIGHT - 100;
         else if (birdY < 0)
         {
             birdY = 0;
@@ -55,9 +53,9 @@ public class Bird
         birdY += birdVelocity;
 
         // Prevent the bird from falling below the ground
-        if (birdY > SCREEN_HEIGHT - bird.getHeight())
+        if (birdY > SCREEN_HEIGHT - 100)
         {
-            birdY = SCREEN_HEIGHT-bird.getHeight();
+            birdY = SCREEN_HEIGHT-100;
             birdVelocity = 0;
         }
         else if (birdY < 0)

@@ -62,9 +62,25 @@ public class MultiplayerActivity extends AppCompatActivity
         ImageView waiting=findViewById(R.id.Waiting);
         waiting.setVisibility(INVISIBLE);
         DatabaseReference gameRef = mDatabase.getReference("game");
-        gameRef.removeValue();
+        gameRef.child("game").removeValue();   // refresh the firebase
         Intent myIntent=new Intent(MultiplayerActivity.this,GravityModeMultiplayer.class);
         startActivity(myIntent);
+    }
+    public void WaitToStart()
+    {
+        // wait till status changes to "playing" to indicate player 2 joined
+        DatabaseReference gameRef = mDatabase.getReference("game");
+        gameRef.child("status").addValueEventListener(new ValueEventListener()
+        {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot)
+            {
+                if(dataSnapshot.getValue(String.class)!=null && dataSnapshot.getValue(String.class).equals("playing"))
+                    StartGame();
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
     private void showCreateOrJoinDialog()
     {
@@ -110,31 +126,19 @@ public class MultiplayerActivity extends AppCompatActivity
                 }
                 else
                 {
+                    // once game created wait for other player to join
                     Toast.makeText(MultiplayerActivity.this, "Game created successfully", Toast.LENGTH_SHORT).show();
                     isPlayer2=false;
                     gameRef.child("status").setValue("waiting");
                     ImageView waiting=findViewById(R.id.Waiting);
                     waiting.setVisibility(VISIBLE);
+                    WaitToStart();
                 }
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {}
         });
 
-        // wait till status changes to playing to indicate player 2 joined
-        gameRef.child("status").addValueEventListener(new ValueEventListener()
-        {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot)
-            {
-                if(dataSnapshot.getValue(String.class)!=null && dataSnapshot.getValue(String.class).equals("playing"))
-                {
-                    StartGame();
-                }
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
     }
 
     private void joinGame()
@@ -148,20 +152,11 @@ public class MultiplayerActivity extends AppCompatActivity
             public void onDataChange(DataSnapshot dataSnapshot)
             {
                 String status = dataSnapshot.getValue(String.class);
-                if ("waiting".equals(status))
+                if (status.equals("waiting"))
                 {
                     gameRef.child("status").setValue("playing");
                     isPlayer2=true;
-
-                    // make a pause before the game starts so it starts on the same time on both devices
-                    try {
-                        Thread.sleep(600);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    StartGame();
+                    WaitToStart();
                 }
                 else
                 {

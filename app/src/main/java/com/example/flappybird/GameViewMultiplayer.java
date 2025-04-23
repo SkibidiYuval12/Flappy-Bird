@@ -8,18 +8,29 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.media.MediaPlayer;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
 import android.text.InputType;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.animation.AlphaAnimation;
+import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -32,12 +43,14 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 public class GameViewMultiplayer extends SurfaceView implements Runnable
 {
     private int SCREEN_WIDTH,SCREEN_HEIGHT;
-    private int stepsCount=0,maxSteps=100;    //indicates when to make new tubes (100)
+    private int stepsCount=0,maxSteps=100;    // indicates when to make new tubes (100)
     private double gapSize;
     private Paint bgPaint;
     private Bird bird1,bird2;
@@ -49,9 +62,14 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
     private Canvas canvas;
     private int interval = 15; // (15)
     private Thread thread;
-    private boolean isRunning=true,gameOver=false;
+    private boolean isRunning=true,gameOver=false,isLost=false;
     private FirebaseDatabase mDatabase;
     private DatabaseReference mGameRef;
+
+
+
+    private boolean isRunning1 = false;
+    private long pauseOffset = 0; // Stores paused time
 
     public GameViewMultiplayer(Context context,int height,int width)
     {
@@ -63,6 +81,8 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
 
         mDatabase = FirebaseDatabase.getInstance();
         mGameRef = mDatabase.getReference("game");
+        mGameRef.removeValue();
+        mGameRef.child("isOver").setValue(false);
 
         pipesOnScreen=new ArrayList<PipesView>();  // list of all the pipes on the screen
 
@@ -73,13 +93,12 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         // set up the birds
         bitmapBird1 = BitmapFactory.decodeResource(getResources(),R.drawable.birdplayerone);
         bitmapBird2 = BitmapFactory.decodeResource(getResources(),R.drawable.birdplayertwo);
+
+
         bird1 = new Bird(bitmapBird1, SCREEN_WIDTH, SCREEN_HEIGHT);
         bird2 = new Bird(bitmapBird2, SCREEN_WIDTH, SCREEN_HEIGHT);
 
         gapSize = bitmapBird1.getHeight()/1.5;    // gap size
-
-        // creating the first pipes
-        CreatePipes();
 
         holder=getHolder();
         thread = new Thread(this);
@@ -89,7 +108,7 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
     {
         // random place of gap
         // the gap indicates the bottom of the top pipe
-        if(!MultiplayerActivity.isPlayer2)
+        if(MultiplayerActivity.isPlayer2)
         {
             rnd = new Random();
             int gap = rnd.nextInt(SCREEN_HEIGHT - (int) (gapSize) - 50) + 50;  // add (50) so the gap wont be at the edges
@@ -101,19 +120,20 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot)
             {
-                if(dataSnapshot.getValue()==null)
-                    return;
-                int gap = dataSnapshot.getValue(int.class);
+                if(dataSnapshot.getValue()!=null)
+                {
+                    int gap = dataSnapshot.getValue(int.class);
 
-                //create top pipe
-                Bitmap bitmapTopPipe = BitmapFactory.decodeResource(getResources(), R.drawable.pipetop);
-                topPipe=new PipesView(bitmapTopPipe, SCREEN_WIDTH, SCREEN_HEIGHT,gap,1);      // 1 indicates bottom pipe
-                pipesOnScreen.add(topPipe);
+                    //create top pipe
+                    Bitmap bitmapTopPipe = BitmapFactory.decodeResource(getResources(), R.drawable.pipetop);
+                    topPipe=new PipesView(bitmapTopPipe, SCREEN_WIDTH, SCREEN_HEIGHT,gap,1);      // 1 indicates bottom pipe
+                    pipesOnScreen.add(topPipe);
 
-                //create bottom pipe
-                Bitmap bitmapBottomPipe = BitmapFactory.decodeResource(getResources(), R.drawable.pipebottom);
-                bottomPipe=new PipesView(bitmapBottomPipe, SCREEN_WIDTH, SCREEN_HEIGHT,gap+(int)(gapSize),2);    // 2 indicates bottom pipe
-                pipesOnScreen.add(bottomPipe);
+                    //create bottom pipe
+                    Bitmap bitmapBottomPipe = BitmapFactory.decodeResource(getResources(), R.drawable.pipebottom);
+                    bottomPipe=new PipesView(bitmapBottomPipe, SCREEN_WIDTH, SCREEN_HEIGHT,gap+(int)(gapSize),2);    // 2 indicates bottom pipe
+                    pipesOnScreen.add(bottomPipe);
+                }
             }
 
             @Override
@@ -138,24 +158,89 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             holder.unlockCanvasAndPost(canvas);
         }
     }
+
     public void run()
     {
         gameOver=false;
+
+        Handler uiHandler = new Handler(Looper.getMainLooper()); // Main thread handler
+        uiHandler.post(() ->
+        {
+            GravityModeMultiplayer.chronometer.setBase(SystemClock.elapsedRealtime()); // Reset base time
+            GravityModeMultiplayer.chronometer.start(); // Start Chronometer
+        });
+
         while (isRunning)
         {
+
+            long elapsedMillis = SystemClock.elapsedRealtime() - GravityModeMultiplayer.chronometer.getBase();   // to synchronize the games
+
             DrawSurface();
 
             // ending the game if one of the birds bird falls of the map
-            // sending the player who lost
-            if(bird1.getBirdY()>=SCREEN_HEIGHT-bird1.getBirdHeight())
-                EndGame("two");
-            if(bird2.getBirdY()>=SCREEN_HEIGHT-bird2.getBirdHeight())
-                EndGame("one");
+            // sending the player who won
+            if(MultiplayerActivity.isPlayer2)
+            {
+                // check if player 1 lost to end the game
+                mGameRef.child("isOver").addListenerForSingleValueEvent(new ValueEventListener()
+                {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
+                    {
+                        if(snapshot.getValue()!=null&&snapshot.getValue().equals(true))
+                            EndGame();
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error)
+                    {}
+                });
+
+                if(bird2.getBirdY()>=SCREEN_HEIGHT-bird2.getBirdHeight()+50)   // (50) for it to look smooth
+                {
+                    mGameRef.child("isOver").setValue(true);
+                    isLost=true;
+                }
+            }
+            else
+            {
+                // check if player 2 lost to end the game
+                mGameRef.child("isOver").addListenerForSingleValueEvent(new ValueEventListener()
+                {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
+                    {
+                        if(snapshot.getValue()!=null&&snapshot.getValue().equals(true))
+                            EndGame();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error)
+                    {}
+                });
+
+                if(bird1.getBirdY()>=SCREEN_HEIGHT-bird1.getBirdHeight()+50)   // (50) for it to look smooth
+                {
+                    mGameRef.child("isOver").setValue(true);
+                    isLost=true;
+                }
+            }
 
             // ending the game if there is collision
             if(pipesOnScreen.size()>1)
-                if(IsCollision()!="")
-                    EndGame(IsCollision());
+                if(IsCollision())
+                {
+                    if(MultiplayerActivity.isPlayer2)
+                    {
+                        mGameRef.child("isOver").setValue(true);
+                        isLost=true;
+                    }
+                    else
+                    {
+                        mGameRef.child("isOver").setValue(true);
+                        isLost=true;
+                    }
+                }
+
 
             // move the birds according to the value in firebase
             if(MultiplayerActivity.isPlayer2)
@@ -191,13 +276,17 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
                 });
             }
 
-            // up the steps to generate new pipes
+            // up the steps to generate new pipes sync the games
             stepsCount++;
-            if (stepsCount >= maxSteps)
+            if (elapsedMillis>=4000)
             {
-                CreatePipes();
-                stepsCount = 0;
-                soundPoint(this.getContext());   // sound when make point
+                uiHandler.post(() ->
+                {
+                    CreatePipes(); // Ensure CreatePipes() only modifies UI
+                    GravityModeMultiplayer.chronometer.setBase(SystemClock.elapsedRealtime());
+                    pauseOffset = 0;
+                    GravityModeMultiplayer.chronometer.stop();
+                });
             }
 
             // moves every pipe on screen
@@ -216,16 +305,21 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             }
         }
     }
-    public String IsCollision()
+    public Boolean IsCollision()
     {
+        // it checks collision only for the player who is playing
+        // this allows the game to work even when there is delay
 
         Rect topPipeRect=null;
         Rect bottomPipeRect=null;
 
         // Bird's rectangle
-        int rectConst=20;   // (20) the image is a bit too big so it shrinks the borders of the rect
-        Rect birdRect1 = new Rect(bird1.getBirdX()+rectConst, bird1.getBirdY()+rectConst, bird1.getBirdX() + bird1.getBirdWidth()-rectConst, bird1.getBirdY() + bird1.getBirdHeight()-rectConst);
-        Rect birdRect2 = new Rect(bird2.getBirdX()+rectConst, bird2.getBirdY()+rectConst, bird2.getBirdX() + bird2.getBirdWidth()-rectConst, bird2.getBirdY() + bird2.getBirdHeight()-rectConst);
+        int rectConst=30;   // (30) the image is a bit too big so it shrinks the borders of the rect
+        Rect birdRect;
+        if(!MultiplayerActivity.isPlayer2)
+            birdRect = new Rect(bird1.getBirdX()+rectConst, bird1.getBirdY()+rectConst, bird1.getBirdX() + bird1.getBirdWidth()-rectConst, bird1.getBirdY() + bird1.getBirdHeight()-rectConst);
+        else
+            birdRect = new Rect(bird2.getBirdX()+rectConst, bird2.getBirdY()+rectConst, bird2.getBirdX() + bird2.getBirdWidth()-rectConst, bird2.getBirdY() + bird2.getBirdHeight()-rectConst);
 
         // assigning each pipe to its position
         PipesView pipe=pipesOnScreen.get(0);
@@ -234,23 +328,20 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         bottomPipeRect = new Rect(pipe.getPipeX(), pipe.getPipeY(), pipe.getPipeX() + pipe.getPipeWidth(), pipe.getPipeY() + pipe.getPipeHeight());
 
         // return the player who lost
-        if(birdRect2.intersect(topPipeRect) || birdRect2.intersect(bottomPipeRect))
-            return "one";
-        else if (birdRect1.intersect(topPipeRect) || birdRect1.intersect(bottomPipeRect))
-            return "two";
+        if(birdRect.intersect(topPipeRect) || birdRect.intersect(bottomPipeRect))
+            return true;
+        else if (birdRect.intersect(topPipeRect) || birdRect.intersect(bottomPipeRect))
+            return true;
         else
-            return "";
+            return false;
 
     }
-    public synchronized void EndGame(String player)
+    public synchronized void EndGame()
     {
         // indicates game is over, and stops the running of the thread
         if (gameOver) return;
         gameOver = true;
         isRunning = false;
-
-
-        mGameRef.child("winner").setValue(player);
 
         // ensure the following code runs on the UI thread
         ((Activity) getContext()).runOnUiThread(new Runnable()
@@ -260,12 +351,28 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             {
                 // show the game over image
                 GravityModeMultiplayer.gameOver.setVisibility(VISIBLE);
-                showGameOverDialog(player);
+                String message="";
+                if(MultiplayerActivity.isPlayer2)
+                {
+                    if(isLost)
+                        message = "LOST";
+                    else
+                        message="WON";
+                }
+                else
+                {
+                    if(isLost)
+                        message = "LOST";
+                    else
+                        message = "WON";
+                }
+
+                 showGameOverDialog(message);
             }
         });
     }
 
-    private void showGameOverDialog(String player)
+    private void showGameOverDialog(String message)
     {
         // ensure the UI thread is being used for the dialog creation
         ((Activity) getContext()).runOnUiThread(new Runnable()
@@ -275,9 +382,8 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             {
                 new AlertDialog.Builder(getContext())
                         .setTitle("Game Over")
-                        .setMessage("Player "+ player + " Won")
+                        .setMessage("YOU "+ message)
                         .setCancelable(false)
-                        .setPositiveButton("Restart", (dialog, which) -> restartGame())
                         .setNeutralButton("Return Home", (dialog, which) ->
                         {
                             Intent myIntent = new Intent(getContext(), MainActivity.class);
@@ -287,38 +393,6 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             }
         });
     }
-    public void restartGame()
-    {
-        // remove GameOver sign
-        GravityModeMultiplayer.gameOver.setVisibility(INVISIBLE);
-
-//        gameOver = false;
-//        isRunning = true;
-//        bird.restartBird();
-//        // Clear all pipes on screen
-//        while(pipesOnScreen.size()>0)
-//            pipesOnScreen.remove(0);
-//        CreatePipes();
-//        stepsCount = 0;
-//
-//        // Stop the old thread safely
-//        if (thread != null && thread.isAlive())
-//        {
-//            isRunning = false;  // Stop the game loop
-//            try
-//            {
-//                thread.interrupt();  // Interrupt the thread to stop it
-//                thread.join();       // Wait for the thread to finish
-//            }
-//            catch (InterruptedException e) {e.printStackTrace();}
-//        }
-//
-//        // Start a new thread
-//        isRunning = true;
-//        holder=getHolder();
-//        thread = new Thread(this); // Restart the thread
-//        thread.start();
-    }
 
     // makes bird jump when touch on screen
     public boolean onTouchEvent(MotionEvent event)
@@ -326,24 +400,10 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
         if (event.getAction() == MotionEvent.ACTION_DOWN)
         {
             if(MultiplayerActivity.isPlayer2)
-            {
                 bird2.jump();
-            }
             else
-            {
                 bird1.jump();
-            }
         }
         return super.onTouchEvent(event);
-    }
-    public void soundJump(Context context)
-    {
-        MediaPlayer mp = MediaPlayer.create(context, R.raw.movesound);
-        mp.start();
-    }
-    public void soundPoint(Context context)
-    {
-        MediaPlayer mp = MediaPlayer.create(context, R.raw.scoresound);
-        mp.start();
     }
 }
