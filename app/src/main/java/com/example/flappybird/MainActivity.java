@@ -1,9 +1,14 @@
 package com.example.flappybird;
 
+import static java.security.AccessController.getContext;
+
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
@@ -15,6 +20,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity
 {
+    public static String playerName=" ";
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -27,8 +34,6 @@ public class MainActivity extends AppCompatActivity
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-
-
 
     }
     public void startButtonClicked(View view)
@@ -51,4 +56,21 @@ public class MainActivity extends AppCompatActivity
         Intent myIntent=new Intent(MainActivity.this,BackgroungSelectionActivity.class);
         startActivity(myIntent);
     }
+    public void RegisterButtonClicked(View view)     // an alert dialog that saves the players name
+    {
+        final EditText editText = new EditText(this);
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle("Enter your name")
+                .setCancelable(false)
+                .setView(editText)  // Add EditText to the dialog
+                .setPositiveButton("Save", (dialog, which) ->
+                {
+                    String name = editText.getText().toString();
+                    playerName=name.toString();
+                })
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show();
+    }
 }
+

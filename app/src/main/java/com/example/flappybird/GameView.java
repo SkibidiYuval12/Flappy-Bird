@@ -31,6 +31,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -152,12 +155,14 @@ public class GameView extends SurfaceView implements Runnable
                 EndGame();
 
             // ending the game if there is collision
-            if(IsCollision())
-                EndGame();
+            if(pipesOnScreen.size()>1)
+                if(IsCollision())
+                     EndGame();
 
             // moves the bird and counts up when to generate new tubes
             bird.move();
             stepsCount++;
+
             if(stepsCount>=maxSteps)
             {
                 CreatePipes();
@@ -226,40 +231,15 @@ public class GameView extends SurfaceView implements Runnable
             @Override
             public void run()
             {
-                // show the game over image
+                // show the game over image and call the game over dialog
                 GravityMode.gameOver.setVisibility(VISIBLE);
+                showGameOverDialog();
 
-                // show the Name Input Dialog first before the Game Over dialog
-                showNameEnterDialog(new NameInputCallback()
-                {
-                    @Override
-                    // after name is entered, show the Game Over dialog
-                    public void onNameEntered(String name) {showGameOverDialog(name);}
-                });
             }
         });
     }
 
-    private void showNameEnterDialog(final NameInputCallback callback)
-    {
-        final EditText input = new EditText(this.getContext());
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-
-        // create the AlertDialog to enter name
-        new AlertDialog.Builder(this.getContext())
-                .setTitle("Enter Name Below:")
-                .setMessage("Enter your name to track score")
-                .setCancelable(false)
-                .setView(input)  // add the EditText to the dialog
-                .setPositiveButton("OK", (dialog, which) ->
-                {
-                    String userName = input.getText().toString();
-                    callback.onNameEntered(userName);  // pass the name to the callback
-                })
-                .show();
-    }
-
-    private void showGameOverDialog(String playerName)
+    private void showGameOverDialog()
     {
         // ensure the UI thread is being used for the dialog creation
         ((Activity) getContext()).runOnUiThread(new Runnable()
@@ -273,8 +253,7 @@ public class GameView extends SurfaceView implements Runnable
                         .setPositiveButton("Restart", (dialog, which) -> restartGame())
                         .setNegativeButton("ScoreBoard", (dialog, which) ->
                         {
-                            updateScoreboard(playerName);
-
+                            updateScoreboard();
                             // show Scoreboard Activity
                             Intent myIntent = new Intent(getContext(), ScoreBoardActivity.class);
                             getContext().startActivity(myIntent);
@@ -292,31 +271,13 @@ public class GameView extends SurfaceView implements Runnable
         });
     }
 
-    private void updateScoreboard(String playerName)
+    private void updateScoreboard()
     {
-        // update the scoreboard with the name and score
-        boolean inserted = false;
-
-        for (int i = 0; i < GravityMode.scoreBoardList.size(); i++) {
-            if (GravityMode.scoreBoardList.get(i) < GravityMode.scoreCount)
-            {
-                // insert the score at the correct position
-                GravityMode.scoreBoardList.add(i, GravityMode.scoreCount);
-                GravityMode.scoreBoardListNames.add(i, playerName + " : " + GravityMode.scoreCount);
-                inserted = true;
-                break;
-            }
-        }
-
-        // if the score was not inserted, it should be added at the end of the list
-        if (!inserted)
-        {
-            GravityMode.scoreBoardList.add(GravityMode.scoreCount);
-            GravityMode.scoreBoardListNames.add(playerName + " : " + GravityMode.scoreCount);
-        }
+        // create a new Player object with the name and score
+        GravityMode.player = new Player(MainActivity.playerName, GravityMode.scoreCount);
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference(GravityMode.player.getName());
+        database.child(GravityMode.player.getName()).setValue(GravityMode.player);
     }
-    public interface NameInputCallback { void onNameEntered(String name);}
-
     public void restartGame()
     {
         // restart the points and remove GameOver sign

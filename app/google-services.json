@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "373166279777",
+    "project_id": "flappybirdproject-4246c",
+    "storage_bucket": "flappybirdproject-4246c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:373166279777:android:22828fb6d6d06f510c6e20",
+        "android_client_info": {
+          "package_name": "com.example.flappybird"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAegs2AaOWddDTZvlCitshVqeprLmPiDAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
