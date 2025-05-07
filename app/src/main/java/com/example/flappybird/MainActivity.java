@@ -26,6 +26,8 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity
 {
     public static String playerName=" ";
+    RelativeLayout relativeLayout;
+    BitmapDrawable drawable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)

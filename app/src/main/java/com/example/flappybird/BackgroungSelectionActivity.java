@@ -13,12 +13,16 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 public class BackgroungSelectionActivity extends AppCompatActivity
 {
 
     public static Bitmap selectedBackground;
+    RelativeLayout relativeLayout;
+    BitmapDrawable drawable;
     public static boolean indicateBackgroundSelectionActivity=false;   // checks if the player entered the activity
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,11 +34,14 @@ public class BackgroungSelectionActivity extends AppCompatActivity
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-
+        relativeLayout = findViewById(R.id.main);
+        drawable = new BitmapDrawable(getResources(), BackgroungSelectionActivity.selectedBackground);
+        if(indicateBackgroundSelectionActivity)
+            relativeLayout .setBackground(drawable);
         indicateBackgroundSelectionActivity=true;
     }
     public void ClickedBackground1 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.skybackground);finish();}
     public void ClickedBackground2 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.forestbackground);finish();}
-    public void ClickedBackground3 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.darkforestbackground);finish();}
+    public void ClickedBackground3 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.desertbackground);finish();}
     public void ClickedBackground4 (View view) {selectedBackground = BitmapFactory.decodeResource(getResources(), R.drawable.spacebackground);finish();}
 }

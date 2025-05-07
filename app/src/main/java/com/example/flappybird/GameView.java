@@ -58,7 +58,7 @@ public class GameView extends SurfaceView implements Runnable
     private Random rnd;
     private SurfaceHolder holder;
     private Canvas canvas;
-    private int interval = 15; // (15)
+    private int interval = 12; // (12)
     private Thread thread;
     private boolean isRunning=true,gameOver=false;
     private FirebaseDatabase mDatabase;

@@ -49,7 +49,7 @@ public class MultiplayerActivity extends AppCompatActivity
 
         RelativeLayout relativeLayout = findViewById(R.id.main);
         BitmapDrawable drawable = new BitmapDrawable(getResources(), BackgroungSelectionActivity.selectedBackground);
-        if (BackgroungSelectionActivity.indicateBackgroundSelectionActivity)
+        if(BackgroungSelectionActivity.indicateBackgroundSelectionActivity)
             relativeLayout.setBackground(drawable);
 
         mDatabase = FirebaseDatabase.getInstance();

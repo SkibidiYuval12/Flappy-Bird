@@ -54,13 +54,14 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
     private double gapSize;
     private Paint bgPaint;
     private Bird bird1,bird2;
+    private BackgroundView backgroundView;
     private PipesView topPipe,bottomPipe;
     private ArrayList<PipesView> pipesOnScreen;
     private Bitmap bitmapBird1,bitmapBird2 , backgroundBitmap;  // Bitmap for the birds and the background;
     private Random rnd;
     private SurfaceHolder holder;
     private Canvas canvas;
-    private int interval = 15; // (15)
+    private int interval = 12; // (12)
     private Thread thread;
     private boolean isRunning=true,gameOver=false,isLost=false;
     private FirebaseDatabase mDatabase;
@@ -86,9 +87,13 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
 
         pipesOnScreen=new ArrayList<PipesView>();  // list of all the pipes on the screen
 
-
-        backgroundBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.skybackground);       // load the selected background image
-        backgroundBitmap = Bitmap.createScaledBitmap(backgroundBitmap,SCREEN_WIDTH, SCREEN_HEIGHT, true);  // strech the image
+        // checks to see if player changed background, if not it uses the deafult
+        if(BackgroungSelectionActivity.indicateBackgroundSelectionActivity)
+            backgroundBitmap = BackgroungSelectionActivity.selectedBackground;
+        else
+            backgroundBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.skybackground);       // load the selected bird image
+        backgroundBitmap = Bitmap.createScaledBitmap(backgroundBitmap,2*SCREEN_WIDTH, SCREEN_HEIGHT, true);  // strech the image
+        backgroundView=new BackgroundView(backgroundBitmap, SCREEN_WIDTH, SCREEN_HEIGHT,0,0);
 
         // set up the birds
         bitmapBird1 = BitmapFactory.decodeResource(getResources(),R.drawable.birdplayerone);
@@ -149,6 +154,7 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             canvas = holder.lockCanvas();
             canvas.drawPaint(bgPaint);
             canvas.drawBitmap(backgroundBitmap, 0, 0, null);
+            backgroundView.draw(canvas);
             bird1.draw(canvas);
             bird2.draw(canvas);
 
@@ -176,6 +182,7 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             long elapsedMillis = SystemClock.elapsedRealtime() - GravityModeMultiplayer.chronometer.getBase();   // to synchronize the games
 
             DrawSurface();
+            backgroundView.move();  // move the background
 
             // ending the game if one of the birds bird falls of the map
             // sending the player who won
