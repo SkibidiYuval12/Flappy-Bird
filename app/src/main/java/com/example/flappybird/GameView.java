@@ -83,7 +83,7 @@ public class GameView extends SurfaceView implements Runnable
         backgroundBitmap = Bitmap.createScaledBitmap(backgroundBitmap,2*SCREEN_WIDTH, SCREEN_HEIGHT, true);  // strech the image
         backgroundView=new BackgroundView(backgroundBitmap, SCREEN_WIDTH, SCREEN_HEIGHT,0,0);
 
-        // checks to see if player changed bird skin, if not it uses the deafult skin
+        // checks to see if player changed bird skin, if not it uses the default skin
         if(BirdSelectionActivity.indicateBirdSelectionActivity)
            bitmapBird=BirdSelectionActivity.selectedBird;
         else

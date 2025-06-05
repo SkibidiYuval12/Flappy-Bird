@@ -189,6 +189,7 @@ public class GameViewMultiplayer extends SurfaceView implements Runnable
             if(MultiplayerActivity.isPlayer2)
             {
                 // check if player 1 lost to end the game
+
                 mGameRef.child("isOver").addListenerForSingleValueEvent(new ValueEventListener()
                 {
                     @Override

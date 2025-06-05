@@ -152,7 +152,7 @@ public class MultiplayerActivity extends AppCompatActivity
             public void onDataChange(DataSnapshot dataSnapshot)
             {
                 String status = dataSnapshot.getValue(String.class);
-                if (status.equals("waiting"))
+                if (status!=null&&status.equals("waiting"))
                 {
                     gameRef.child("status").setValue("playing");
                     isPlayer2=true;

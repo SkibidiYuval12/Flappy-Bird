@@ -1,14 +1,17 @@
 package com.example.flappybird;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Adapter;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -82,7 +85,9 @@ public class ScoreBoardActivity extends AppCompatActivity
         int maxScore=-1;
         int maxIndex=0;
         ArrayList<Player> winnerList=new ArrayList<>();
-        while(playersList.size()>0)
+        // show only top 10 players
+        for(int j=0;j<10;j++)
+        {
         {
             for (int i=0;i<playersList.size();i++)
             {
@@ -96,12 +101,25 @@ public class ScoreBoardActivity extends AppCompatActivity
             maxScore=-1;
             playersList.remove(maxIndex);
         }
+        }
 
-        // create the list
-        ArrayAdapter <Player> adapter;
-        adapter = new ArrayAdapter<Player> (this,android.R.layout.simple_list_item_1, winnerList);
+        // create the list and add color to the text
+//        ArrayAdapter <Player> adapter;
+//        adapter = new ArrayAdapter<Player> (this,android.R.layout.simple_list_item_1, winnerList);
+        ArrayAdapter<Player> adapter = new ArrayAdapter<Player>(this, android.R.layout.simple_list_item_1, winnerList)
+        {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent)
+            {
+                View view = super.getView(position, convertView, parent);
+
+                TextView textView = (TextView) view.findViewById(android.R.id.text1);
+                textView.setTextColor(Color.RED);
+
+                return view;
+            }
+        };
         listView = (ListView) findViewById(R.id.listViewScores);
-        listView.setAdapter(adapter);
         listView.setAdapter(adapter);
     }
     public void ReturnToGameButton(View view)
